@@ -12,8 +12,9 @@ import pygame
 from Car import CarConfig, Car
 from Wall import EntityConfig, Wall
 from RangeFinderGroup import RangeFinderGroup
-from NeuralNetwork import NeuralNetwork
+from NeuralNetwork3 import NeuralNetwork3
 from ControlScheme import ControlScheme
+from Modulation import ModulationScheme
 from NetworkVisualizer import NetworkVisualizer
 
 ###########################################################
@@ -32,7 +33,6 @@ def drawCenter(pos, display, options):
   x_translate = options['x_translate']
   position = tuple(int(x_scale*x+x_translate) for x in pos)
   pygame.draw.circle(display, redcolor, position, 5, 2)
-  
 
 class MapConfig:
   ROOT = ET.parse('Maps/XMap.xml').getroot()
@@ -67,6 +67,7 @@ class MapBuilder:
     self.point = (pointX, pointY)
     self.walls = walls
 
+
 class CarMazeEnv:
   MAP_BUILDER = MapBuilder()
   DISPLAY_WIDTH = 1000
@@ -78,35 +79,36 @@ class CarMazeEnv:
              'rotation': 180}
   
   def __init__(self):
+    # initialize map objects
     self.car = self.MAP_BUILDER.car
     self.walls = self.MAP_BUILDER.walls
     self.rangefinder_group = RangeFinderGroup(self.car)
     self.center_point = self.MAP_BUILDER.point
+    # initialize game variables
     self.resolution = (self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT)
     self.clock = pygame.time.Clock()
     self.game_ext = False
     self.performance = 0
     self.ticks = 0
-    self.brain = NeuralNetwork()
-    self.brain.configure()
-    self.control_scheme = ControlScheme(self.brain, self.car)
-    self.test_mod_scheme = self.brain.modulation_scheme(self.rangefinder_group, self.walls)
-    self.mod_scheme = self.brain.modulation_scheme(self.rangefinder_group, self.walls)
+    # initialize algorithm settings
+    self.network = NeuralNetwork3(inputcount=11, outputcount=1)
+    self.mod_scheme = ModulationScheme(self.rangefinder_group, self.walls)
+    # Initialize visual settings
     self.options = self.OPTIONS
     self.game_display = None
     self.font = None
     self.bounds = None
     self.calculate_bounds()
-    self.network_visualizer = NetworkVisualizer(self.brain,
-                                               [self.bounds[0], 0, 1600, self.bounds[1]])
+#    self.network_visualizer = NetworkVisualizer(self.brain,
+#                                               [self.bounds[0], 0, 1600, self.bounds[1]])
     pygame.init()
     pygame.font.init()
       
   def step(self, training=True):
-    self.control_scheme.rangeFinderControl(self.rangefinder_group,
-                                           angle_control=True, acceleration_control=False)
+    ControlScheme.range_finder_control(self.network, self.rangefinder_group, angle_control=True)
     last_position = self.car.center
     self.car.update(self.walls)
+
     self.handle_training(training=True)
     self.rangefinder_group.update(self.walls)    
     self.performance += self.car.update_score(last_position, self.center_point) / 360
@@ -121,17 +123,9 @@ class CarMazeEnv:
   
   def handle_training(self, training=True):
     if training:
-      #self.test_mod_scheme.modulate()
-      for i in range(len(self.brain.mod_signal.modulations)):
-        self.brain.modulation_functions[i](self.mod_scheme) 
-        #print('modulations: ', self.test_mod_scheme.modulations)
-        self.brain.mod_signal.set_signal(i, self.mod_scheme.modulations[i])
-      if self.brain.use_history:
-        if len(self.brain.history_buffer) == self.brain.current_buffer_length:
-          self.brain.history_buffer.clear()
-          self.brain.train()
-      else:
-        self.brain.train()
+      self.mod_scheme.wall_avoidance()
+      self.network.modulation_signal.set_signal(0, self.mod_scheme.modulations[0])
+      self.network.train()
         
   def reset(self):
     self.__init__()
@@ -159,7 +153,7 @@ class CarMazeEnv:
              (700, 10), self.game_display)
     drawCenter(self.center_point, self.game_display, self.options)
     # Visualize the networks
-    self.visualize_network(self.game_display, self.options)
+#    self.visualize_network(self.game_display, self.options)
     # Render the next frame
     pygame.display.flip()
     self.clock.tick(60)
