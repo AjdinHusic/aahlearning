@@ -7,9 +7,10 @@ Created on Fri Oct 12 12:52:38 2018
 import numpy as np
 
 # from RaahnXmlConfig import NeuralNetworkConfig, LayerConfig
-from Activation import Activation
-from TrainingMethod import TrainingMethod
-from Modulation import ModulationScheme, ModulationSignal
+from functions import Activation
+from training import TrainingMethod
+from modulation import ModulationScheme, ModulationSignal
+from buffer import Buffer
 
 class NeuralNetwork3:
     """
@@ -39,8 +40,7 @@ class NeuralNetwork3:
     WEIGHT_SCALE = 6.0
     ACTIVATION = Activation.logistic
     TRAINING_METHODS = {'Hebbian': TrainingMethod.hebbian_learning,
-                        'SparseAutoencoder': TrainingMethod.sparseAutoEncoderTrain,
-                        'HebbianBatches': TrainingMethod.hebbianBatchesTrain}
+                        'HebbianHistory': TrainingMethod.hebbian_history_learning}
     MOD_SCHEMES = {'WallAvoidance': ModulationScheme.wall_avoidance}
     
     def __init__(self, **kwargs):
@@ -79,22 +79,34 @@ class NeuralNetwork3:
       self.weight_cap = 10.0
       self.modulation_signal = ModulationSignal()
       self.modulation_signal.add_signal()
+      # specify buffer settings if any
+      self.initlen = 1
+      self.maxlen = 100
+      self.growth = 1.0
     
     def init_neurons(self, count):
       return np.ones(count)*0.0
       
     def add_experience(self, experience):
-      # adds experience to input layer, and to any buffers if specified
+      # add experience to the very first layer, and propagate it
       self.activations[0] = np.array(experience)
+      self.propagate_signal()
+      # add experience to any buffers if specified
+      for layer in self.layers:
+        input_sample = np.array(layer.network.activations[layer.current_layer])
+        output_sample = np.array(layer.network.activations[layer.current_layer + 1])
+        sample = (input_sample, output_sample)
+        layer.history_buffer.add_sample(sample)
     
     def propagate_signal(self):
       for layer in self.layers:
         layer.propagate_signal()
         
-    def compile_network(self, training_method='Hebbian', modulation_scheme='WallAvoidance'):
+    def compile_network(self, training_method='HebbianHistory', modulation_scheme='WallAvoidance'):
       for layer in self.layers:
         layer.training_method = NeuralNetwork3.TRAINING_METHODS[training_method]
         layer.modulation_scheme = NeuralNetwork3.MOD_SCHEMES[modulation_scheme] 
+        layer.history_buffer = Buffer(self.initlen, maxlen=self.maxlen, growth_fact=self.growth)
         
     def train(self):
       for layer in self.layers:
@@ -122,6 +134,7 @@ class NetworkLayer:
     self.neuron_count = neuron_count
     self.learning_rate = learning_rate
     self.training_method = training_method
+    self.history_buffer = Buffer(1, maxlen=1)
     # initialize the weights
     self.init_weights()
     

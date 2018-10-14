@@ -12,10 +12,10 @@ class NeuralNetworkConfig:
   ROOT = ET.parse('Networks/XMapHebbian.xml').getroot()
   def __init__(self, root=ROOT):
     if root.get('UseNovelty'):
-      self.useNovelty = root.get('UseNovelty') == 'true'
+      self.use_novelty = root.get('UseNovelty') == 'true'
     else:
-      self.useNovelty = None
-    self.historyBufferSize = int(root.find('HistoryBufferSize').text)
+      self.use_novelty = None
+    self.history_buffer_size = int(root.find('HistoryBufferSize').text)
     self.weight_cap = float(root.find('WeightCap').text)
     self.output_noise_magnitude = float(root.find('OutputNoiseMagnitude').text)
     self.weight_noise_magnitude = float(root.find('WeightNoiseMagnitude').text)
@@ -50,6 +50,39 @@ class ConnectionConfig:
       self.modulation_scheme = node.find('ModulationScheme').text
     else:
       self.modulation_scheme = None
+      
+
+class LayerConfig(object):
+  ROOT = ET.parse('Networks/XMapSequential.xml').getroot()
+  
+  def __init__(self, root=ROOT):
+    # Set the root in which to look
+    self.root = root
+    # Find attributes
+    self.use_bias = self.by_attr('UseBias') == 'true'
+    # Find tags
+    self.input_count = int(self.by_tag('InputCount'))
+    self.output_count = int(self.by_tag('OutputCount'))
+    self.training_method = self.by_tag('TrainingMethod')
+    self.learning_rate = float(self.by_tag('LearningRate'))
+    
+  def by_attr(self, attribute):
+    # returns attribute value
+    value = self.root.get(attribute)
+    return value
+    
+  def by_tag(self, tag):
+    # returns element value by looking by tag
+    element = self.root.find(tag)
+    if element is not None:
+      return element.text
+    else:
+      return None
+      
+    
+
+      
+    
 
 
 

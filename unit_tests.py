@@ -4,9 +4,11 @@ Created on Fri Oct 12 12:33:33 2018
 
 @author: ajdin
 """
-from NeuralNetwork import NeuralNetwork
-
+import numpy as np
 import unittest
+
+from net3 import NeuralNetwork3
+
 
 class TestNeuralNetwork(unittest.TestCase):
   """
@@ -14,15 +16,18 @@ class TestNeuralNetwork(unittest.TestCase):
   """
   def __init__(self, *args, **kwargs):
     super(TestNeuralNetwork, self).__init__(*args, **kwargs)
-    self.ann = NeuralNetwork()
-    self.ann.configure()
-    self.weights = [x.weight for x in self.ann.input_groups[0].outgoing_groups[0].connections]
+    self.nn5by5 = NeuralNetwork3(inputcount=5, hiddencount=0, outputcount=5)
   
   def test_neuralnetwork(self):
-    self.assertTrue([-self.ann.weight_cap]*len(self.weights) <=\
-                    self.weights <= [self.ann.weight_cap]*len(self.weights))
+    last_layer = self.nn5by5.layers[-1]
+    cap = self.nn5by5.weight_cap
+    weights = last_layer.weights
+    all_elements_equal = np.all([-cap<=x for x in weights]) and np.all([x<=cap for x in weights])
+    self.assertTrue(all_elements_equal)
+
     
   def test_propagatesignal(self):
+    
     pass
   
   

@@ -4,8 +4,8 @@ Created on Sun Aug 19 18:40:16 2018
 
 @author: ajdin
 """
-from RangeFinder import RangeFinder
-from LineSegment import get_dist
+from rangefinder import RangeFinder
+from lines import get_dist
 
 
 class ModulationSignal:

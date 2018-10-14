@@ -4,5 +4,5 @@ This project is part of my M.Sc. Thesis. It demonstrates that autonomous (drivin
 It is based on the Novelty Real-Time Autoencoder Augmented Hebbian Network (RAAHN)-algorithm. 
 [**Read about Novelty-RAAHN ▸**](http://eplex.cs.ucf.edu/papers/bowren_alife16.pdf)
 
-<img src="https://github.com/AjdinHusic/aahlearning/blob/master/sim-snapshot.PNG">
+<img src="https://github.com/AjdinHusic/aahlearning/blob/master/sim-snapshot3.PNG">
 

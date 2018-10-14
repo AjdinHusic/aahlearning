@@ -11,7 +11,7 @@ import numpy as np
 import xml.etree.ElementTree as ET
 import pygame
 
-from LineSegment import LineSegment
+from lines import LineSegment
 
 redcolor = (0xff,0,0)
 

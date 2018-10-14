@@ -146,14 +146,3 @@ class LineSegment:
     return entities_in_bounds
       
   
-      
-#%% Plot LineSegments
-    
-if __name__ == "__main__":
-  import matplotlib.pyplot as plt
-  def plotLine(point1, point2, c='k-'):
-    plt.plot([point1[0], point2[0]], [point1[1], point2[1]], c)
-    
-  def plotLineSegment(Line, c='k-'):
-    plotLine(Line.startPoint, Line.endPoint, c)
-    

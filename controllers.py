@@ -4,7 +4,6 @@ class ControlScheme:
   def range_finder_control(network, rangefinder_group, angle_control=True, acceleration_control=True):
     inputs = rangefinder_group.activations
     network.add_experience(inputs)
-    network.propagate_signal()
     output = float(network.activations[-1][0])
     if angle_control:
       rangefinder_group.car.angle += (output*rangefinder_group.car.ROTATE_RANGE) \

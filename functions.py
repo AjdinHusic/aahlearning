@@ -9,5 +9,5 @@ class Activation:
   
   #Takes the already computed value of sigmoid
   @staticmethod
-  def logisticDerivative(x):
+  def logistic_derivative(x):
     return x * (1.0 - x)

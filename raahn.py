@@ -6,6 +6,7 @@ Created on Tue Jun  5 15:12:41 2018
 @author: ajdin
 """
 import pygame
+
 from CarMazeEnv import CarMazeEnv
 
 display_width = 1600

@@ -4,7 +4,7 @@ Created on Thu Sep 13 13:26:34 2018
 
 @author: ajdin
 """
-from LineSegment import LineSegment
+from lines import LineSegment
 import pygame
 import xml.etree.ElementTree as ET
 

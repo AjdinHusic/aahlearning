@@ -8,14 +8,15 @@ import numpy as np
 
 import xml.etree.ElementTree as ET
 import pygame
+import buffer
+import visualnet
 
+from controllers import ControlScheme as control
 from Car import CarConfig, Car
+from rangefinder import RangeFinderGroup as sensors
+from net3 import NeuralNetwork3 as nn3
 from Wall import EntityConfig, Wall
-from RangeFinderGroup import RangeFinderGroup
-from NeuralNetwork3 import NeuralNetwork3
-from ControlScheme import ControlScheme
-from Modulation import ModulationScheme
-from NetworkVisualizer import NetworkVisualizer
+from modulation import ModulationScheme
 
 ###########################################################
 
@@ -82,7 +83,7 @@ class CarMazeEnv:
     # initialize map objects
     self.car = self.MAP_BUILDER.car
     self.walls = self.MAP_BUILDER.walls
-    self.rangefinder_group = RangeFinderGroup(self.car)
+    self.rangefinder_group = sensors(self.car)
     self.center_point = self.MAP_BUILDER.point
     # initialize game variables
     self.resolution = (self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT)
@@ -91,21 +92,23 @@ class CarMazeEnv:
     self.performance = 0
     self.ticks = 0
     # initialize algorithm settings
-    self.network = NeuralNetwork3(inputcount=11, outputcount=1)
+    self.network = nn3(inputcount=11, hiddencount=5, outputcount=1)
     self.mod_scheme = ModulationScheme(self.rangefinder_group, self.walls)
+    self.mod_buffer = buffer.Buffer(self.network.initlen, maxlen=self.network.maxlen, \
+                                    growth_fact=self.network.growth)
     # Initialize visual settings
     self.options = self.OPTIONS
     self.game_display = None
     self.font = None
     self.bounds = None
     self.calculate_bounds()
-#    self.network_visualizer = NetworkVisualizer(self.brain,
-#                                               [self.bounds[0], 0, 1600, self.bounds[1]])
+    self.network_visualizer = visualnet.NetworkVisualizer(self.network,
+                                                          [self.bounds[0], 0, 1600, self.bounds[1]])
     pygame.init()
     pygame.font.init()
       
   def step(self, training=True):
-    ControlScheme.range_finder_control(self.network, self.rangefinder_group, angle_control=True)
+    control.range_finder_control(self.network, self.rangefinder_group, angle_control=True)
     last_position = self.car.center
     self.car.update(self.walls)
 
@@ -124,8 +127,13 @@ class CarMazeEnv:
   def handle_training(self, training=True):
     if training:
       self.mod_scheme.wall_avoidance()
-      self.network.modulation_signal.set_signal(0, self.mod_scheme.modulations[0])
+      self.mod_buffer.add_sample(self.mod_scheme.modulations[0])
+      if self.mod_buffer.isfull:
+        modulation = np.mean(self.mod_buffer.samples)
+        self.network.modulation_signal.set_signal(0, modulation)
+        print('tick: ', self.ticks, ' modulation: ', modulation)
       self.network.train()
+      
         
   def reset(self):
     self.__init__()
@@ -153,10 +161,10 @@ class CarMazeEnv:
              (700, 10), self.game_display)
     drawCenter(self.center_point, self.game_display, self.options)
     # Visualize the networks
-#    self.visualize_network(self.game_display, self.options)
+    self.visualize_network(self.game_display, self.options)
     # Render the next frame
     pygame.display.flip()
-    self.clock.tick(60)
+    self.clock.tick(40)
   
   def close(self):
     self.game_ext = True
